@@ -10,6 +10,31 @@ Projeto completo Full Stack com NodeJs, ReactJS e React Native
 * Desenvolvimento Mobile com React Native
 
 
+<!-- 
+
+Clonar o projeto
+Instalar as dependências
+
+Criar um arquivo chamado .env com as informações abaixo:
+
+DATABASE_URL="postgresql://postgres:admin@localhost:5432/pizzaria?schema=public"
+
+# Secret JWT https://www.md5hashgenerator.com/
+JWT_SECRET="98388750f63fac47136942aaf8ac79ce"
+
+Rodar o comando abaixo para criar as tabelas
+`yarn prisma migrate dev`
+
+Configurar o banco de dados POSTGRESQL
+Host: localhost Porta: 5432
+Banco de dados: pizzaria
+Nome de usuário: postgres
+Senha: admin 
+
+-->
+
+
+
 <!-- # Minha Jornada no Curso Full Stack
 
 Olá, pessoal!
