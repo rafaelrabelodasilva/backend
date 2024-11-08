@@ -1,42 +1,119 @@
-yarn init -y
+# Anotações do conteúdo do curso
 
-yarn add express@4.17.2
-//Adiciona tipagens do express
-yarn add @types/express@4.17.13 --dev
-yarn add ts-node-dev@1.1.8 --dev
-yarn add typescript@4.5.5 --dev
+## Inicializar projeto node com yarn
 
-//Inicia o typescript e cria o arquivo tsconfig.json
-yarn tsc --init
+Irá criar o arquivo `package.json`
 
-//Biblioteca que nos ajuda com os erros
-yarn add express-async-errors
+Comando:
+`yarn init -y`
 
-//Liberar para qualquer ip
-yarn add cors
-yarn add @types/cors -D
+## Adicionar o express
 
-//Utilizado POSTGRESQL na versão 11.22
+Comando para adicionar o express ao projeto:
+`yarn add express@4.17.2`
+
+Adicionar tipagens do express:
+`yarn add @types/express@4.17.13 --dev`
+
+## Adicionar a lib ts-node-dev para dar live reload
+
+Para conseguirmos rodar com o typescript (como temos o import {} from ''  que não é suportado pelo nodeJS por padrão) utilizado uma biblioteca chamada ts-node-dev. 
+
+Ele tem o live reload ajuda muito no desenvolvimento para nao ter que parar a aplicação
+
+Comandos: 
+`yarn add ts-node-dev@1.1.8 --dev`
+`yarn add typescript@4.5.5 --dev`
+
+criado script dentro de `package.json`:
+```
+  "scripts": {
+    "dev": "ts-node-dev src/server.ts"
+  },
+```
+
+## Adicionar Type Script
+
+Iniciar o typescript e cria o arquivo `tsconfig.json`
+
+`yarn tsc --init`
+
+
+## Adicionar lib express-async-errors para tratar erros da API
+
+Biblioteca que nos ajuda com os erros
+
+Ela SEMPRE tem que ser o segundo import do arquivo `.ts`, isso é orientação da equipe do express
+
+`yarn add express-async-errors`
+
+
+## Adicionar lib cors para liberar a aplicação para qualquer IR
+
+Liberar para qualquer ip
+
+`yarn add cors`
+`yarn add @types/cors -D`
+
+## Criar banco de dados
+
+Utilizado POSTGRESQL na versão 11.22
 password: admin
 port: 5432
 
-baixado o postbird 0.8.4.exe que tem a interface mais simples do que o postgresql
-https://github.com/Paxa/postbird/releases
+Criado banco de dados chamado `pizzaria`
+
+## Adicionar o Prisma para interagir com o banco de dados
+
+Adicionado prisma para interagir com o banco de dados, ORM.
+
+`yarn add prisma`
+
+Adicionado prisma client para termos algumas coisas como gerar migrations do banco de dados.
+
+`yarn add @prisma/client`
+
+Criar a configuração base do prisma
+
+`npx prisma init`
 
 
-//Adicionado prisma para interagir com o banco de dados
-yarn add prisma
+Irá criar a pasta `prisma` e o arquivo `.env`
 
-//Adicionado prisma client para termos algumas coisas como gerar migrations do banco de dados
-yarn add @prisma/client
+Alterado a configuração do .env para a que criamos
+USERNAME  do postgres é postgres por padrão sempre
 
-//Cria a configuração base do prisma
-npx prisma init
-//Irá criar a pastinha "prisma" e o .env
+Como ficou:
+```
 DATABASE_URL="postgresql://postgres:admin@localhost:5432/pizzaria?schema=public"
+```
 
-yarn prisma migrate dev
-create-table-users
+Criado nova pasta dentro de src
+`src/prisma/index.ts` dentro dela adicionei:
+
+```
+import { PrismaClient } from "@prisma/client"
+
+const prismaClient = new PrismaClient()
+
+export default prismaClient
+```
+
+Com ele conseguimos ter todo o acesso ao banco de dados, como deletar, inserir, atualizar, etc
+
+
+## Criar schema e migration com o Prisma
+
+Criado dentro do arquivo `prisma/schema.prisma`
+
+Link documentação:
+https://www.prisma.io/docs/orm/prisma-schema/overview
+
+Rodar o comando abaixo para criar o migration:
+`yarn prisma migrate dev`
+
+Dado um nome ao migration, nom eu caso coloquei:
+`create-table-users`
 
 //Arquitetura
 
