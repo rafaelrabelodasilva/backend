@@ -1,5 +1,9 @@
 # Anotações do conteúdo do curso
 
+Quando batemos na rota localhost:3333/users.
+Chamamos o user controller que inicializa um serviço.
+Este serviço fica responsável pela manipulação dos dados.
+
 ## Inicializar projeto node com yarn
 
 Irá criar o arquivo `package.json`
@@ -25,8 +29,7 @@ Comandos:
 `yarn add ts-node-dev@1.1.8 --dev`
 `yarn add typescript@4.5.5 --dev`
 
-criado script dentro de `package.json`:
-```
+```package.json
   "scripts": {
     "dev": "ts-node-dev src/server.ts"
   },
@@ -83,15 +86,13 @@ Irá criar a pasta `prisma` e o arquivo `.env`
 Alterado a configuração do .env para a que criamos
 USERNAME  do postgres é postgres por padrão sempre
 
-Como ficou:
-```
+```.env
 DATABASE_URL="postgresql://postgres:admin@localhost:5432/pizzaria?schema=public"
 ```
 
-Criado nova pasta dentro de src
-`src/prisma/index.ts` dentro dela adicionei:
+Criado nova pasta dentro de src:
 
-```
+```src/prisma/index.ts
 import { PrismaClient } from "@prisma/client"
 
 const prismaClient = new PrismaClient()
@@ -115,29 +116,147 @@ Rodar o comando abaixo para criar o migration:
 Dado um nome ao migration, nom eu caso coloquei:
 `create-table-users`
 
-//Arquitetura
+## Criptografar as senhas do usuário com a biblioteca bcryptjs
 
-Quando batemos na rota localhost:3333/users
-Chamamos o user controller que inicializa um serviço
-Este serviço fica responsável pela manipulação dos dados
+Instalar biblioteca para criptografar as senhas dos usuários:
+`yarn add bcryptjs`
+`yarn add @types/bcryptjs -D`
 
-//Criptografa senhas
+No service `CreateUserService` foi importado o bcrypt
 
-yarn add bcryptjs
-yarn add @types/bcryptjs -D
+Antes de salvar no banco foi criado uma constante `passwordHas`
+Passando a senha que será criptografada e o salto (número da criptografia).
+Ao submeter o post será salvo no banco criptografada
 
-//JWT (json web token)
-Para quando logar retornar um token
-https://www.md5hashgenerator.com/
-MD5 Hash
-https://jwt.io/
+```CreateUserService.ts
+import { hash } from "bcryptjs"
+const passwordHash = await hash(password, 8)
 
-yarn add jsonwebtoken
-yarn add @types/jsonwebtoken -D
+    const user = await prismaClient.user.create({
+      data: {
+        first_name: firstName,
+        last_name: lastName,
+        email: email,
+        password: passwordHash 
+      }, 
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        email: true
+      }
+    })
+```
+
+## Adicionar a lib jsonwebtoken e dotnet para gerar o token da sessão
+
+Gerar um token JWT e devolver os dados do usuário como id, name, email
+Quando precisamos autenticar usuário em aplicações rest (trafegadas em JSON). JSON WEB TOKEN (JWT) ajuda na parte de segurança para trafegar essas informações, para garatir que a pessoa utilizando a aplicação realmente é ela.
+
+Quando batermos na rota `/session` com os dados para login o JWT devolve um token de acesso.
+
+Ele vai ser importante porque temos requisições privadas que somente um determinado usuário poderá ver as informações.
+
+Instalar a biblioteca:
+`yarn add jsonwebtoken`
+`yarn add @types/jsonwebtoken -D`
 
 
-//.env para poder acessar as variáveis de ambiente mesmo que já venha no prisma
-yarn add dotenv
+No service adicionado o método `sign()`, que espera um payload (o que queremos que tenha dentro do token) e uma secretKey (não pode ser passada a ninguém) e como não é interessante deixar hardcoded usamos ela em hash e adicionamos nas variáveis de ambiente (.env).
+
+No site abaixo informamos a senha projeto-meu-produto-app e foi convertido para MD5 Hash.
+
+Link: https://www.md5hashgenerator.com/
+
+`af55b42e1a01dab7a697d3bd7c577a05`
+
+Mesmo que já venha com o Prisma é interessante adicionar a biblioteca `.env` para acessarmos as variáveis de ambiente que estão dentro do arquivo `.env`
+
+Comando:
+`yarn add dotenv`
+
+```AuthUserService.ts
+import { sign } from "jsonwebtoken"
+
+    const token = sign(
+      {
+        firstName: user.first_name,
+        lastName: user.last_name
+      },
+      process.env.JWT_SECRET, //Foi ajustado o tsconfig para parar de dar erro de que essa variável pode ser undefined
+      {
+        subject: user.id, //ID do usuário
+        expiresIn: '30d' //Quando vai expirar o token
+      })
+
+    return {
+      id: user.id,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      email: user.email,
+      token: token
+    }
+
+```
+
+```tsconfig.json
+"strict": false,                                      /* Enable all strict type-checking 
+```
+
+```.env
+JWT_SECRET="af55b42e1a01dab7a697d3bd7c577a05"
+```
+
+Ao acessar a url `https://jwt.io/` e informarmos o token do response podemos ver todos os dados do header, payload e verify signature.
+
+
+## Adicionar middleware para validar o token durante a troca de rotas privadas
+
+O middleware criado `src/middlewares/isAuthenticated.ts` serve para todas as rotas que o usuário só pode acessar se estiver autenticado, e estando autenticado o usuário pode ter acesso a criar registros, ver informações sensíveis, etc. Como dentro do `Request` temos acesso ao body, headers também "injetamos" dentro dele o ID do usuário.
+
+```isAuthenticated.ts
+  try {
+    //Validar o token
+    const { sub } = verify(
+      token,
+      process.env.JWT_SECRET
+    ) as Payload
+
+    console.log(sub)
+    req.user_id = sub //variável injetada dentro do Request
+
+    return next()
+  }
+```
+
+Quando adicionamos apresentou erro pois o type Script não espera receber essa variável dentro do Request:
+```
+Property 'user_id' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'
+```
+
+Então criamos uma pasta chamada `@types` com a tipagem da variável `req.user_id` utilizada no arquivo `src/middlewares/isAuthenticated.ts` porque queremos passar no request o user_id que consequentemente estará dentro do token. 
+
+```src/@types/express/index.ts
+declare namespace Express{
+  export interface Request{
+    user_id: string
+  }
+}
+```
+
+Também no arquivo tsconfig foi descomentado a linha 34 e adicionado o caminho da criação da nova variável
+
+Como estava:
+```tsconfig.json
+// "typeRoots": [],                                  /* Specify multiple folders that act like `./node_modules/@types`. */
+```
+
+Como ficou:
+```tsconfig.json
+"typeRoots": [
+  "./src/@types"                                     /* Specify multiple folders that act like './node_modules/@types'. */
+], 
+```
 
 //Multer 
 Biblioteca para trabalhar com imagens no projeto pois não salvamos ela de fato no banco, apenas o nome dela
@@ -145,8 +264,14 @@ Biblioteca para trabalhar com imagens no projeto pois não salvamos ela de fato 
 yarn add multer
 yarn add @types/multer -D
 
-//Front
-$ npx create-next-app@latest frontend
+
+# FRONT
+
+Rodado o comando abaixo para inicializar o projeto:
+
+`npx create-next-app@14.2.4`
+
+```terminal
 Need to install the following packages:
 Ok to proceed? (y) y
 
@@ -159,4 +284,4 @@ Ok to proceed? (y) y
 √ Would you like to customize the import alias (@/* by default)? ... Yes
 √ What import alias would you like configured? ... @/*
 Creating a new Next.js app in C:\Cursos\Udemy\pizzaria\frontend\frontend.
-
+```
