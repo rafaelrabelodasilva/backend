@@ -362,6 +362,72 @@ class CreateProductController {
 
 ![alt text](image-1.png)
 
+## Deploy da api
+
+Foi feito pelo vercel
+
+Comando "build" vai gerar os arquivos ts em javascript.
+Comando "start" vai iniciar a aplicação após o build
+
+```package.json
+  "scripts": {
+    "dev": "ts-node-dev src/server.ts",
+    "build": "tsc --build",
+    "start": "node dist/server.js"
+  },
+```
+Informado aonde será gerado o build do projeto
+```tsconfig.json
+    "outDir": "./dist", 
+```
+
+Para gerar os arquivos estáticos (pasta dist). Terá toda a estrutura do projeto porém em js
+`npm run buld`
+
+Para iniciar o servidor:
+`npm run start`
+
+Preparar para fazer deploy
+
+Adicionado variável de ambiente:
+```.env
+# Porta do servidor
+PORT=3333
+```
+
+Criado configuração do versel
+
+```versel.json
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "dist/server.js",
+      "use": "@versel/node",
+      "config": { "includeFiles": ["dist/**"] }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "dist/server.js"
+    }
+  ]
+}
+```
+
+Adicionado 2 scritps: versel-build e prisma:generate
+```package.json
+  "scripts": {
+    "dev": "ts-node-dev src/server.ts",
+    "build": "tsc --build",
+    "start": "node dist/server.js",
+    "versel-build": "prisma generate && prisma migrate deploy",
+    "prisma:generate": "prisma generate"
+  },
+
+```
+
 # FRONT
 
 Rodado o comando abaixo para inicializar o projeto:
