@@ -265,6 +265,103 @@ yarn add multer
 yarn add @types/multer -D
 
 
+## Storage para upload de imagens (cloudinary)
+
+Utilizado cloudinary porque é grátis
+
+https://cloudinary.com/
+https://cloudinary.com/documentation/image_upload_api_reference
+
+![alt text](image.png)
+
+![alt text](image-2.png)
+
+Adicionado as configurações no arquivo .env
+
+```
+# Cloudnary
+CLOUDINARY_NAME=dx6c59t...Z
+CLOUDINARY_KEY=556558661966...Z
+CLOUDINARY_SECRET=c8ge2dFeYtdMdpRT7mh5thHJ...Z
+```
+
+Instalado a lib cloudinary
+
+`npm install cloudinary`
+
+Adicionado lib auxiliar para realizar upload
+
+`npm i express-fileupload`
+`npm install --save-dev @types/express-fileupload`
+
+https://www.npmjs.com/package/express-fileupload
+
+Configuração dentro do projeto backend
+
+```server.ts
+import fileUpload from 'express-fileupload'
+
+[...]
+app.use(router)
+app.use(fileUpload({
+  limits: { fileSize: 50 * 1024 * 1024} //Recebe no máx 50mb
+}))
+
+```
+
+Removido a função do multer de upload do arquivo
+
+```routes.ts
+// router.post('/product', isAuthenticated, upload.single('file'), new CreateProductController().handle)
+
+router.post('/product', isAuthenticated, new CreateProductController().handle)
+```
+
+```CreateProductController.ts
+[...]
+import { UploadedFile } from "express-fileupload";
+
+import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_KEY,
+  api_secret: process.env.CLOUDINARY_SECRET
+})
+
+class CreateProductController {
+[...]
+    //O request.files sempre retorna um array arquivos mesmo sendo apenas 1 arquivo
+    if (!request.files || Object.keys(request.files).length === 0) {
+      throw new Error("Error upload file image")
+    } else {
+      //Em caso positivo envia para a API do cloudinary
+      const file: UploadedFile = request.files['file']
+
+      const resultFile: UploadApiResponse = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream({}, function (error, result) {
+          if(error) {
+            reject(error)
+            return
+          }
+          resolve(result)
+        }).end(file.data)
+      })
+
+      const product = await createProductService.execute({
+        name,
+        price,
+        description,
+        banner: resultFile.url,
+        category_id
+      })
+      return response.json(product)
+    }
+  }
+```
+
+![alt text](image-1.png)
+
 # FRONT
 
 Rodado o comando abaixo para inicializar o projeto:

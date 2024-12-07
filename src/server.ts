@@ -4,11 +4,16 @@ import cors from 'cors'
 import path from 'path'
 
 import { router } from './routes'
+import fileUpload from 'express-fileupload'
 
 const app = express()
+
 app.use(express.json())
 app.use(cors())//Biblioteca que libera a app para qualquer ip
 
+app.use(fileUpload({
+  limits: { fileSize: 50 * 1024 * 1024 } //Recebe no máx 50mb
+}))
 app.use(router)
 
 //MiddleWare
