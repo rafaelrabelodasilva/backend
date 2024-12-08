@@ -432,13 +432,31 @@ Adicionado 2 scritps: versel-build e prisma:generate
 
 https://neon.tech/
 
+Configuração feita:
 ![alt text](image-3.png)
 
+Connection string do banco:
 ![alt text](image-4.png)
+
+Foi criado um projeto na vercel informando as variáveis juntamente com a connection string da DATABASE_URL gerada pelo Neon:
 
 ![alt text](image-5.png)
 
+Realizado deploy e copiado o domínio para ver se o endpoint está funcional:
 ![alt text](image-6.png)
+
+Com a validação abaixo da API pudemos confirmar que está funcionando conforme esperado:
+
+![alt text](image-7.png)
+
+```cURL
+curl --location 'https://pizzaria-backend-lilac.vercel.app/session' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "email": "r@outlook.com",
+    "password": "123456"
+}'
+```
 
 # FRONT
 
